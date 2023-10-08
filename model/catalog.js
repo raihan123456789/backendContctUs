@@ -17,7 +17,7 @@ function catalogModel(sequelize, Sequelize) {
           allowNull: false,
         },
         rebate: {
-          type: Sequelize.INTEGER,
+          type: Sequelize.STRING(10),
           allowNull: true,
         },
         photo: {

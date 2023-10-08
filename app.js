@@ -1,5 +1,4 @@
 const express = require('express'); 
-// const nodemailer = require('nodemailer'); 
 const app = express(); 
 const port = 3000; 
 const db = require('./db/index')
@@ -7,57 +6,35 @@ const Catalog = db.catalog
 const bodyParser = require('body-parser')
 const cors = require("cors")
 
-// Middleware to parse form data
+// Middleware 
 app.use(express.urlencoded({ extended: true }));
-
-// Serve static files from the "public" directory
-
-
 app.use(bodyParser.json());
-
 app.use(cors())
-// // Handle GET request to render the contact form
-// app.get('/contact', (req, res) => {
-//   // Send the contact form HTML file
-//   res.sendFile(__dirname + '/public/contact.html');
-// });
 
-// // Handle POST request to process form submissions
-// app.post('/contact', (req, res) => {
-//   // Extract form data from the request body
-//   const { name, email, message } = req.body;
 
-//   // Create a nodemailer transporter using your email service provider's settings
-//   const transporter = nodemailer.createTransport({
-//     service: 'YourEmailService', 
-//     auth: {
-//       user: 'youremail@example.com', 
-//       pass: 'yourpassword', 
-//     },
-//   });
+// Middleware for contact form input validation
+function validateFeedback(req, res, next) {
+  const { firstName, lastName, email, phone, message } = req.body;
+  if (!firstName || !lastName || !email || !phone || !message) {
+    return res.status(400).json({ error: 'Semua kolom harus diisi.' });
+  }
+  next();
+}
 
-//   // Email configuration
-//   const mailOptions = {
-//     from: 'youremail@example.com', 
-//     to: 'recipient@example.com', 
-//     subject: 'Contact Form Submission', 
-//     text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`, // Email content
-//   };
+// Endpoint to store feedback (POST request)
+app.post("/proses_feedback", validateFeedback, async (req, res) => {
+  try {
+    const { firstName, lastName , email, phone, message } = req.body;
+    // Save feedback to database using Sequelize model
+    await db.Feedback.create({ firstName, lastName, email, phone, message });
+    res.status(201).json({ message: 'Feedback berhasil disimpan.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Terjadi kesalahan pada server.' });
+  }
+});
 
-//   // Send the email
-//   transporter.sendMail(mailOptions, (error, info) => {
-//     if (error) {
-//       // Handle errors when sending email
-//       console.log('Error sending email: ' + error);
-//       res.status(500).send('Error sending email');
-//     } else {
-//       // Email sent successfully
-//       console.log('Email sent: ' + info.response);
-//       res.send('Thank you for contacting us! Your message has been sent.');
-//     }
-//   });
-// });
 
+// Handle GET Request for Catalog Items
 app.post('/api/catalog', async(req, res) => {
   // Extract form data from the request body
   // const { name, price, rebate, photo } = req.body;
@@ -80,8 +57,6 @@ app.post('/api/catalog', async(req, res) => {
 
 
 app.get('/api/catalog', async(req, res) => {
-  // Extract form data from the request body
-  // const { name, price, rebate, photo } = req.body;
   try {
     const catalogs = await Catalog.findAll()
     res.status(201).json({
@@ -97,7 +72,7 @@ app.get('/api/catalog', async(req, res) => {
   }
 })
 
-
+// Database Synchronization
 async function startdb(){
   try {
     await db.sequelize.sync({alter:true})
